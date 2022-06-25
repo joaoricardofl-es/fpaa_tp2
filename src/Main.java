@@ -15,7 +15,7 @@ public class Main {
         Clock clock = Clock.systemDefaultZone();
         String arquivos[] = {"LaminacaoTeste1.txt",
                 "LaminacaoTeste2.txt", "LaminacaoTeste3.txt", "LaminacaoTeste4.txt"};
-        //String arquivos[] = {"LaminacaoTeste1.txt"};
+       //String arquivos[] = {"LaminacaoTeste2.txt"};
 
         for (String arquivo : arquivos) {
 
@@ -34,7 +34,7 @@ public class Main {
 
             programacaoDinamica(crList, barra, meta, clock);
 
-            //backTracking(crList, meta, barra, clock);
+            backTracking(crList, meta, barra, clock);
         }
 
     }
@@ -66,11 +66,14 @@ public class Main {
         System.out.println("# Solução - Algoritmo Guloso");
         long inicio, fim;
         inicio = clock.millis();
+        int valor = 0;
         do {
             CustoReducao cr = getCustoReducao(custoReducao, barra);
 
             Reducao reducao = cr.getReducoes().stream()
                     .min(Comparator.comparing(Reducao::custoBeneficio)).get();
+
+            valor += reducao.getCusto();
 
             System.out.println("Redução da barra " + barra.getTamanho() + "mm de " +
                     reducao.getReducao() + " por R$" + reducao.getCusto() + " - " +
@@ -79,6 +82,7 @@ public class Main {
 
         } while (barra.getTamanho() > meta);
         fim = clock.millis();
+        System.out.println("O valor para redução " + valor);
         System.out.println("Tempo de execução " + (fim - inicio) + "ms");
         System.out.println();
         barra.voltarAoTamanhoOriginal();
@@ -155,25 +159,28 @@ public class Main {
         long inicio, fim;
         StringBuilder sb = new StringBuilder();
         String str = "";
+        int min;
 
         System.out.println("Ordem Original");
         inicio = clock.millis();
-        backTrackingRec(crList, meta, barra.getTamanho(), 0, 1000, str, true);
+        min = backTrackingRec(crList, meta, barra.getTamanho(), 0, 1000, str, true, barra, false);
+        System.out.println("O minimo é " + min);
         fim = clock.millis();
         System.out.println("Tempo de execução " + (fim - inicio) + "ms");
         System.out.println();
 
         System.out.println("Ordem Alterada");
         inicio = clock.millis();
-        backTrackingRec(crList, meta, barra.getTamanho(), 0, 1000, str, false);
+        min = backTrackingRec(crList, meta, barra.getTamanho(), 0, 1000, str, false, barra, false);
+        System.out.println("O minimo é " + min);
         fim = clock.millis();
         System.out.println("Tempo de execução " + (fim - inicio) + "ms");
         System.out.println();
 
     }
 
-    public static void backTrackingRec(LinkedList<CustoReducao> crList, int meta, int tamanhoAtual, int valor,
-                                       int minValor, String str, boolean ascOrd) {
+    public static int backTrackingRec(LinkedList<CustoReducao> crList, int meta, int tamanhoAtual, int valor,
+                                       int minValor, String str, boolean ascOrd, BarraMetal barra, boolean printLog) {
         CustoReducao cr = getCustoReducao(crList, tamanhoAtual);
         int idxReducao = ascOrd ? 0 : cr.getReducoes().size() - 1;
         do {
@@ -184,17 +191,18 @@ public class Main {
                 if (proximoTamanho == meta && novoValor < minValor) {
                     minValor = novoValor;
                     String res = str + printBT(tamanhoAtual, reducao) + " / valor total de " + novoValor;
-                    System.out.println(res);
+                    if(printLog) System.out.println(res);
+                    return minValor;
                 }
-                if (proximoTamanho > meta && (valor + reducao.getCusto()) < minValor) {
-                    backTrackingRec(crList, meta, proximoTamanho, novoValor, minValor,
-                            str + printBT(tamanhoAtual, reducao), ascOrd);
+                if (proximoTamanho > meta && novoValor < minValor) {
+                    minValor = Math.min(backTrackingRec(crList, meta, proximoTamanho, novoValor, minValor,
+                            str + printBT(tamanhoAtual, reducao), ascOrd, barra, printLog), minValor);
                 }
             }
             if (ascOrd) idxReducao++;
             else idxReducao--;
-        } while (ascOrd ? (cr.getReducoes().size() > idxReducao) : (idxReducao > 0));
-
+        } while (ascOrd ? (cr.getReducoes().size() > idxReducao) : (idxReducao >= 0));
+        return minValor;
     }
 
 
